@@ -1,6 +1,6 @@
 const { readFile } = require("fs/promises");
-const { join } = require("path");
 const { error } = require("./constants.js");
+const User = require("./user");
 
 const DEFAULT_OPTIONS = {
   maxLines: 3,
@@ -18,13 +18,13 @@ class File {
       throw new Error(validation.error);
     }
 
-    return content;
+    const users = File.parseCSVToJSON(content);
+
+    return users;
   }
 
   static async getFileContent(filePath) {
-    const fileName = join(__dirname, filePath);
-
-    const content = (await readFile(fileName)).toString("utf8");
+    const content = (await readFile(filePath)).toString("utf8");
 
     return content;
   }
@@ -39,8 +39,6 @@ class File {
 
     const isHeaderValid = header === options.fields.join(",");
 
-    console.log(isHeaderValid);
-
     if (!isHeaderValid) {
       return {
         error: error.FILE_FIELDS_ERROR_MESSAGE,
@@ -48,12 +46,38 @@ class File {
       };
     }
 
+    const isContentLengthAccepted =
+      fileWithoutHeader.length > 0 &&
+      fileWithoutHeader.length <= options.maxLines;
+
+    if (!isContentLengthAccepted) {
+      return {
+        error: error.FILE_LENGTH_ERROR_MESSAGE,
+        valid: false,
+      };
+    }
+
     return { valid: true };
+  }
+
+  static parseCSVToJSON(csvString) {
+    const lines = csvString.split("\n");
+    const firstLine = lines.shift().replace(REMOVE_BREAK_LINES_REGEX, "");
+    const header = firstLine.split(",");
+    const users = lines.map((line) => {
+      line = line.replace(REMOVE_BREAK_LINES_REGEX, "");
+      const columns = line.split(",");
+      let user = {};
+
+      for (const index in columns) {
+        user[header[index]] = columns[index];
+      }
+
+      return new User(user);
+    });
+
+    return users;
   }
 }
 
-(async () => {
-  const result = await File.csvToJson("../mocks/threeItems-valid.csv");
-  // const result = await File.csvToJson("../mocks/invalidHeader-invalid.csv");
-  console.log(result);
-})();
+module.exports = File;
