@@ -1,0 +1,17 @@
+{
+  "name": "aula04-coverage-2e2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "api.js",
+  "dependencies": {},
+  "devDependencies": {
+    "mocha": "^8.4.0",
+    "supertest": "^6.2.3"
+  },
+  "scripts": {
+    "test": "npx mocha -w *.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
