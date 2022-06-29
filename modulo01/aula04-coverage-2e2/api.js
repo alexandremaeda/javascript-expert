@@ -1,6 +1,29 @@
 const http = require("http");
+const DEFAULT_USER = {
+  username: "maeda",
+  password: "123",
+};
 
 const routes = {
+  "/login:post": async (request, response) => {
+    // response é um iterator
+    for await (const data of request) {
+      const { username, password } = JSON.parse(data);
+
+      if (
+        username !== DEFAULT_USER.username ||
+        password !== DEFAULT_USER.password
+      ) {
+        response.writeHead(401);
+        response.write("loggin failed");
+
+        return response.end();
+      }
+    }
+
+    response.write("login has succeeded");
+    return response.end();
+  },
   "/contact:get": (request, response) => {
     response.write("contact us page");
     return response.end();
