@@ -1,5 +1,6 @@
 const { describe, it, before, beforeEach, afterEach } = require("mocha");
 const CarService = require("../../src/service/CarService");
+const Transaction = require("../../src/entities/Transaction");
 
 const { join } = require("path");
 const sinon = require("sinon");
@@ -14,17 +15,17 @@ const mocks = {
 
 describe("CarService Suite Test", () => {
   let carService = {};
-  let sandox = {};
+  let sandbox = {};
 
   before(() => {
     carService = new CarService({ cars: carDatabase });
   });
   beforeEach(() => {
-    sandox = sinon.createSandbox();
+    sandbox = sinon.createSandbox();
   });
 
   afterEach(() => {
-    sandox.restore();
+    sandbox.restore();
   });
 
   it("should retrieve a random postition from an array", () => {
@@ -38,7 +39,7 @@ describe("CarService Suite Test", () => {
     const carCategory = mocks.validCarCategory;
     const carIndex = 0;
 
-    sandox
+    sandbox
       .stub(carService, carService.getRandomPositionFromArray.name)
       .returns(carIndex);
 
@@ -54,11 +55,11 @@ describe("CarService Suite Test", () => {
     const carCategory = Object.create(mocks.validCarCategory);
     carCategory.carIds = [car.id];
 
-    sandox
+    sandbox
       .stub(carService.carRepository, carService.carRepository.find.name)
       .resolves(car);
 
-    sandox.spy(carService, carService.choosenRandomCar.name);
+    sandbox.spy(carService, carService.choosenRandomCar.name);
 
     const result = await carService.getAvailableCar(carCategory);
     const expected = car;
@@ -77,7 +78,7 @@ describe("CarService Suite Test", () => {
 
     const numberOfDays = 5;
 
-    sandox
+    sandbox
       .stub(carService, "taxesBasedOnAge")
       .get(() => [{ from: 40, to: 50, then: 1.3 }]);
 
@@ -87,6 +88,38 @@ describe("CarService Suite Test", () => {
       carCategory,
       numberOfDays
     );
+
+    expect(result).to.be.deep.equal(expected);
+  });
+
+  it("given a customer and a car caregory it should return a transaction receipt", async () => {
+    const car = mocks.validCar;
+    const carCategory = {
+      ...mocks.validCarCategory,
+      price: 37.6,
+      carIds: [car.id],
+    };
+
+    const customer = Object.create(mocks.validCustomer);
+    customer.age = 20;
+
+    const numberOfDays = 5;
+    const dueDate = "10 de novembro de 2020";
+
+    const now = new Date(2020, 10, 5);
+    sandbox.useFakeTimers(now.getTime());
+    sandbox
+      .stub(carService.carRepository, carService.carRepository.find.name)
+      .resolves(car);
+
+    const expectedAmount = carService.currencyFormat.format(206.8);
+    const result = await carService.rent(customer, carCategory, numberOfDays);
+    const expected = new Transaction({
+      customer,
+      car,
+      dueDate,
+      amount: expectedAmount,
+    });
 
     expect(result).to.be.deep.equal(expected);
   });
